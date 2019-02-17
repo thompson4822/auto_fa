@@ -17,6 +17,7 @@ data class Acknowledgement(val response: String = "I got your criteria", val cri
 
 @CrossOrigin(origins = ["http://localhost:8080"], maxAge = 3000)
 @RestController
+@RequestMapping("/auto_fa")
 class MainController {
 
     @GetMapping("/greeting")
