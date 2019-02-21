@@ -89,9 +89,12 @@ class FakeElasticSearchService(private val repository: ElasticSearchRepository) 
         val records = repository.findByDateCreatedBetween(filter.startDate?.toDate() ?: today(), filter.endDate?.toDate() ?: today())
         val keys = listOf(filter.primaryKey) + filter.secondaryKeys
 
+        // On the front end, every node in the tree needs a unique id. This will be ours for all 1st and 2nd level nodes
+        var id = 0;
+
         fun findTreeRec(records: List<ElasticSearchEntry>, keys: List<String>): List<SearchNode> {
             return if(keys.size > 1) {
-                findChildren(records, keys[0]).map { (name, entries) -> SearchNode(name = name, type=treeTypeMap(keys[0]), children = findTreeRec(entries, keys.drop(1))) }
+                findChildren(records, keys[0]).map { (name, entries) -> SearchNode(id = "${id++}", name = name, type=treeTypeMap(keys[0]), children = findTreeRec(entries, keys.drop(1))) }
             }
             else {
                 records.map{ SearchNode(id = it.id, name=treeName(it, keys[0]), type=treeTypeMap(keys[0]), children=listOf()) }
