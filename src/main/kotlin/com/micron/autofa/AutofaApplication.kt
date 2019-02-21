@@ -11,18 +11,14 @@ import org.springframework.context.annotation.Bean
 class AutofaApplication {
 	@Bean
 	fun initialize(repository: ElasticSearchRepository)= CommandLineRunner {
-//		repository.deleteAll()
 		if(repository.count() == 0L) {
 			println("Please hold on a minute ... adding records!")
 			repository.insert((0..10000).map { Generators.generateElasticSearchEntry() })
 		}
 		println("Database ready!")
-		//repository.findAll().forEach{println(it)}
-		//println(repository.findAllByScript())
 	}
 }
 
 fun main(args: Array<String>) {
-	//println(Generators.generateElasticSearchEntry())
 	runApplication<AutofaApplication>(*args)
 }
