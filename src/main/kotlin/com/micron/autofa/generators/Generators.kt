@@ -1,14 +1,13 @@
 package com.micron.autofa.generators
 
 import com.micron.autofa.models.ElasticSearchEntry
+import com.micron.autofa.utils.stringToLocalDate
+import com.micron.autofa.utils.toLong
+import java.text.SimpleDateFormat
 import java.time.LocalDate
-import com.micron.autofa.utils.*
 import java.time.format.DateTimeFormatter
 import java.util.*
 import kotlin.random.Random
-import java.text.SimpleDateFormat
-import java.text.DateFormat
-
 
 
 object Generators {
@@ -17,26 +16,11 @@ object Generators {
     val scriptNames = generateScriptNames(10)
     val testStations = generateTestStations(10)
     val shas = generateShas(10)
-    val random: Random = Random(System.currentTimeMillis())
-
-    init {
-
-    }
 
     /**
      * Really handy extension function to retrieve a random item from a list of items.
      */
     fun <T> List<T>.random() = this[Random.nextInt(this.size)]
-
-
-    // I thought this would be useful, but now I'm not so sure ...
-    fun List<String>.randomUniqueList(min: Int, max: Int): List<String> {
-        val result = mutableSetOf<String>()
-        val length = Random.nextInt(min, max)
-        while(result.size < length)
-            result.add(this.random())
-        return result.toList()
-    }
 
     /**
      * Create a random list of Jenkins job names
@@ -56,8 +40,8 @@ object Generators {
      * Create a random list of test script names, with up to 3 extensions for some variety
      */
     fun generateScriptNames(count: Int): List<String> {
-        val first = listOf("intense", "automatic", "clown", "mongoose", "beast", "snake", "weasel", "wicked", "cruel", "slow", "screeching", "meticulous")
-        val second = listOf("hammer", "defenestrator", "injector", "ripper", "dismantler", "charmer", "crippler", "stabber", "poker", "pounder", "jabber", "breaker", "rifle", "shotgun", "incinerator", "blender", "grinder")
+        val first = listOf("intense", "automatic", "clown", "wicked", "cruel", "slow", "screeching", "meticulous", "sector", "namespace", "bitwise", "nvme", "targeted", "synchronized", "sporadic", "ftl")
+        val second = listOf("hammer", "injector", "ripper", "dismantler", "crippler", "stabber", "poker", "pounder", "jabber", "breaker", "rifle", "shotgun", "incinerator", "blender", "grinder")
         val extensions = listOf("py", "tcl", "sh")
 
         return (0..count).map { _ -> "${first.random()}_${second.random()}.${extensions.random()}"}
@@ -91,15 +75,6 @@ object Generators {
         val period = ending - starting
         return Date(starting + Random.nextLong(period))
     }
-
-    /*
-    An example of how the above might be called:
-    val formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd")
-	val startDate = LocalDate.parse("2019/02/10", formatter)
-	val endDate = LocalDate.parse("2019/02/26", formatter)
-	(0..10).forEach { println(Generators.generateDateCreated(startDate, endDate)) }
-
-     */
 
     /**
      * Randomly select a message to be associated with a failure

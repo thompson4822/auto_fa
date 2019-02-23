@@ -9,7 +9,7 @@ data class JiraComment(val creator: JiraUser, val text: String, val creationDate
 
 @Document(collection = "jira")
 data class Jira(
-        @Id val id: Long? = null,
+        @Id val id: String? = null,
         val name: String,
         val description: String,
         val comments: List<JiraComment>,

@@ -7,7 +7,7 @@ data class SearchNode (
     val id: String? = null,
     val name: String,
     val type: String,
-    val children: List<SearchNode>
+    val children: List<SearchNode>? = null
 )
 
 data class ElasticSearchResult(val nodes: List<SearchNode>)

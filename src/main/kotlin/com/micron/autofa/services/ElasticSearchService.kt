@@ -1,26 +1,11 @@
 package com.micron.autofa.services
 
-import com.micron.autofa.models.ElasticSearchEntry
-import com.micron.autofa.models.ElasticSearchFilter
-import com.micron.autofa.models.ElasticSearchResult
-import com.micron.autofa.models.SearchNode
+import com.micron.autofa.models.*
 import com.micron.autofa.repositories.ElasticSearchRepository
 import org.springframework.stereotype.Service
+import java.text.SimpleDateFormat
 import java.util.*
 import java.util.Locale
-import java.text.SimpleDateFormat
-import java.text.DateFormat
-import java.util.Calendar
-
-
-
-
-
-interface ElasticSearchService {
-    fun findTree(filter: ElasticSearchFilter): ElasticSearchResult
-    fun findLog(id: String): String
-    fun findBetweenDates(startDate: String, endDate: String): List<ElasticSearchEntry>
-}
 
 
 const val MainFailMessage = "Main Fail Message"
@@ -28,14 +13,13 @@ const val ScriptName = "Script Name"
 const val TestStation = "Test Station/SSN"
 const val SHA = "SHA"
 const val Build = "Build"
-/*
-    TestScriptFailMessage("Test Script Fail Message"),
-    JIRA("JIRA"),
-    DriveCapacity("Drive Capacity"),
-    FTE("FTE"),
-    PVE("PVE"),
-    CVE("CVE"),
-*/
+
+interface ElasticSearchService {
+    fun findTree(filter: ElasticSearchFilter): ElasticSearchResult
+    fun findLog(id: String): String
+    fun findBetweenDates(startDate: String, endDate: String): List<ElasticSearchEntry>
+    fun retrieveLogs(logIds: LogIDs): LogMessages
+}
 
 
 @Service
@@ -62,7 +46,7 @@ class FakeElasticSearchService(private val repository: ElasticSearchRepository) 
         }
     }
 
-    fun treeName(entry: ElasticSearchEntry, key: String) = when(key) {
+    private fun treeName(entry: ElasticSearchEntry, key: String) = when(key) {
         MainFailMessage -> entry.mainFailMessage
         ScriptName -> entry.script
         TestStation -> entry.testStation
@@ -72,7 +56,7 @@ class FakeElasticSearchService(private val repository: ElasticSearchRepository) 
     }
 
 
-    fun treeTypeMap(key: String) = when(key) {
+    private fun treeTypeMap(key: String) = when(key) {
         MainFailMessage -> "error"
         ScriptName -> "script"
         TestStation -> "station"
@@ -82,46 +66,47 @@ class FakeElasticSearchService(private val repository: ElasticSearchRepository) 
     }
 
     /**
+     * Retrieve the logs by the given ids
+     */
+    override fun retrieveLogs(logIds: LogIDs): LogMessages {
+        return LogMessages(messages = repository.findAllById(logIds.ids).map{ LogMessage(id = it.id!!, log = it.log) })
+    }
+
+    /**
      * Get the records that match the search filter and build a tree (result) that can be displayed in the browser.
      */
     override fun findTree(filter: ElasticSearchFilter): ElasticSearchResult {
         // If the dates are null, set them to today's date ...
-        val records = repository.findByDateCreatedBetween(filter.startDate?.toDate() ?: today(), filter.endDate?.toDate() ?: today())
+        var records = repository.findByDateCreatedBetween(filter.startDate?.toDate() ?: today(), filter.endDate?.toDate() ?: today())
+
+        // If the filter is limited to particular sources, filter out anything that doesn't match
+        if(filter.sources.isNotEmpty()) {
+           records = records.filter { it.sources.intersect(filter.sources).isNotEmpty() }
+        }
+        
         val keys = listOf(filter.primaryKey) + filter.secondaryKeys
 
-        // On the front end, every node in the tree needs a unique id. This will be ours for all 1st and 2nd level nodes
+        // On the front end, every node in the tree needs a unique id. This will be ours for all 1st and 2nd level nodes.
+        // It is basically a hack.
         var id = 0;
 
+        // NOTE - One of the nice things about this approach is that there could be an arbitrary number of levels and it would still work.
         fun findTreeRec(records: List<ElasticSearchEntry>, keys: List<String>): List<SearchNode> {
             return if(keys.size > 1) {
                 findChildren(records, keys[0]).map { (name, entries) -> SearchNode(id = "${id++}", name = name, type=treeTypeMap(keys[0]), children = findTreeRec(entries, keys.drop(1))) }
             }
             else {
-                records.map{ SearchNode(id = it.id, name=treeName(it, keys[0]), type=treeTypeMap(keys[0]), children=listOf()) }
+                records.map{ SearchNode(id = it.id, name=treeName(it, keys[0]), type=treeTypeMap(keys[0])) }
             }
         }
         return ElasticSearchResult(nodes = findTreeRec(records, keys))
     }
-
-
-
-    /*
-    data class SearchNode (
-        val id: String?,
-        val name: String,
-        val type: String,
-        val children: List<SearchNode>
-    )
-
-    data class ElasticSearchResult(val nodes: List<SearchNode>)
-     */
-
 
     override fun findLog(id: String): String {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun findBetweenDates(startDate: String, endDate: String): List<ElasticSearchEntry> =
-        repository.findByDateCreatedBetween(startDate.toDate(), endDate.toDate())
+            repository.findByDateCreatedBetween(startDate.toDate(), endDate.toDate())
 
 }
